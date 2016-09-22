@@ -27,6 +27,7 @@ use std::vec::Vec;
 use std::path::Path;
 use std::fs::rename;
 use std::result;
+use std::rc::Rc;
 
 
 /// Default error type for HashIO.
@@ -38,7 +39,7 @@ pub enum HashIOError {
     IOError(io::Error),
     ParseError(Box<error::Error>)
 }
-type Result<T> = result::Result<T, HashIOError>;
+pub type Result<T> = result::Result<T, HashIOError>;
 
 impl fmt::Display for HashIOError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -86,7 +87,7 @@ pub trait Typeable {
 }
 
 pub trait HashIOType: Hashable {
-    fn store(&self) -> ();
+    fn store(&self) -> Result<()>;
     fn unsafe_loader(&self) -> bool {
         false
     }
@@ -103,13 +104,13 @@ pub trait HashIOType: Hashable {
 }
 
 pub trait HashIOParse: HashIOType + Typeable {
-     fn parse<H>(hash_io: &H, write: &Write) -> Box<Self>
+     fn parse<H>(hash_io: &H, write: &Write) -> Result<Rc<Self>>
         where H: HashIO;
 }
 
 pub trait HashIO {
-    fn get<T>(&self, hash: &Hash) -> T
+    fn get<T>(&self, hash: &Hash) -> Result<Rc<T>>
                 where T: HashIOParse;
-    fn put<T>(&self, item: &T) -> ()
+    fn put<T>(&self, item: &T) -> Result<()>
                 where T: HashIOParse;
 }
