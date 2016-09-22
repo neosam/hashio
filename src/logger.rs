@@ -46,8 +46,7 @@
 //! possible to implement the Writable trait which provides a
 //! a helper function to calculate the hash.
 
-
-extern crate time;
+/*extern crate time;
 
 use hash::*;
 use std::collections::BTreeMap;
@@ -415,3 +414,4 @@ pub fn rebuild_log<L, T>(log: &L) -> Result<L, LogError>
     }
     Ok(res)
 }
+*/

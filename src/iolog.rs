@@ -1,6 +1,6 @@
 //! Implementation of the hashable log which uses a HashIO in the background.
 
-extern crate time;
+/*extern crate time;
 
 use hash::*;
 use hashio::*;
@@ -320,3 +320,4 @@ mod test {
         assert_eq!(None, iter.next());
     }
 }
+*/

@@ -7,7 +7,7 @@
 //! The downside here it that IO errors can occur when you try to access the data.  For this,
 //! extra error handling is required (or you just the unwrap methods which can cause a panic).
 
-use io::*;
+/*use io::*;
 use hash::*;
 use hashio::*;
 use std::io::{Read, Write};
@@ -321,4 +321,4 @@ mod test {
         print!("Lazy should be unloaded now\n");
         assert_eq!(false, a_again.a.is_loaded());
     }
-}
+}*/
