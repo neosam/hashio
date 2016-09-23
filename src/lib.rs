@@ -7,6 +7,7 @@ pub mod hash;
 pub mod io;
 #[macro_use]
 pub mod hashio;
+pub mod string;
 pub mod lazyio;
 pub mod logger;
 pub mod iolog;

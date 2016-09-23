@@ -23,7 +23,6 @@ use hash::*;
 use io::*;
 use std::fs::{File, create_dir_all};
 use std::collections::BTreeMap;
-use std::vec::Vec;
 use std::path::Path;
 use std::fs::rename;
 use std::result;
@@ -95,12 +94,14 @@ pub trait HashIOType: Hashable {
 }
 
 pub trait HashIOParse: HashIOType + Typeable {
-    fn parse<H, R>(hash_io: &H, read: &R, type_hash: &Option<Hash>) -> Result<Rc<Self>>
+    fn parse<H, R>(hash_io: &H, read: &mut R, type_hash: &Option<Hash>) -> Result<Rc<Self>>
         where H: HashIO, R: Read;
-    fn store<H, W>(&self, hash_io: &H, write: &W) -> Result<()>
+    fn store<H, W>(&self, hash_io: &H, write: &mut W) -> Result<()>
         where H: HashIO, W: Write;
-    fn store_childs<H>(&self, hash_io: &H) -> Result<()>
-        where H: HashIO;
+    fn store_childs<H>(&self, _: &H) -> Result<()>
+        where H: HashIO {
+        Ok(())
+    }
 
     fn unsafe_loader() -> bool {
         false
@@ -108,7 +109,7 @@ pub trait HashIOParse: HashIOType + Typeable {
     fn version_valid(version: u32) -> bool {
         version == 1
     }
-    fn type_hash_valid(hash: &Hash) -> bool {
+    fn type_hash_valid(_: &Hash) -> bool {
         false
     }
 }
@@ -191,8 +192,8 @@ impl HashIO for HashIOFile {
             {
                 let mut write = try!(File::create(tmp_filename.clone()));
                 if !T::unsafe_loader() {
-                    write_u32(1, &mut write);
-                    write_hash(&T::type_hash(), &mut write);
+                    try!(write_u32(1, &mut write));
+                    try!(write_hash(&T::type_hash(), &mut write));
                 }
                 try!(item.store(self, &mut write));
             }
@@ -201,3 +202,4 @@ impl HashIO for HashIOFile {
         Ok(())
     }
 }
+
