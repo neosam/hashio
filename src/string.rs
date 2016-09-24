@@ -5,7 +5,6 @@ use hashio::*;
 use std::io::{Read, Write};
 use std::result;
 use std::io;
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 impl Writable for String {
@@ -31,10 +30,6 @@ impl Typeable for String {
 }
 
 impl HashIOType for String {
-    fn childs(&self) -> BTreeMap<String, Box<HashIOType>> {
-        BTreeMap::new()
-    }
-
     fn type_hash_obj(&self) -> Hash {
         String::type_hash()
     }

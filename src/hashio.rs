@@ -87,7 +87,9 @@ pub trait Typeable {
 }
 
 pub trait HashIOType: Hashable {
-    fn childs(&self) -> BTreeMap<String, Box<HashIOType>>;
+    fn childs(&self) -> BTreeMap<String, Rc<HashIOType>> {
+        BTreeMap::new()
+    }
 
     fn type_hash_obj(&self) -> Hash;
     fn type_name_obj(&self) -> String;
