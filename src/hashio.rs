@@ -36,7 +36,8 @@ pub enum HashIOError {
     VersionError(u32),
     TypeError(Hash),
     IOError(io::Error),
-    ParseError(Box<error::Error>)
+    ParseError(Box<error::Error>),
+    FallbackNotSupported
 }
 pub type Result<T> = result::Result<T, HashIOError>;
 
@@ -47,7 +48,8 @@ impl fmt::Display for HashIOError {
             HashIOError::VersionError(version) => write!(f, "Unsupported version: {}", version),
             HashIOError::TypeError(ref hash) => write!(f, "Unexpected type: {}", hash.as_string()),
             HashIOError::IOError(ref err) => err.fmt(f),
-            HashIOError::ParseError(ref err) => write!(f, "Parse error: {}", err)
+            HashIOError::ParseError(ref err) => write!(f, "Parse error: {}", err),
+            HashIOError::FallbackNotSupported => write!(f, "Fallback is not supported")
         }
     }
 }
@@ -58,7 +60,8 @@ impl error::Error for HashIOError {
             HashIOError::VersionError(_) => "Unsupported version",
             HashIOError::TypeError(_) => "Unexpected type",
             HashIOError::IOError(ref err) => err.description(),
-            HashIOError::ParseError(ref err) => err.description()
+            HashIOError::ParseError(ref err) => err.description(),
+            HashIOError::FallbackNotSupported => "Fallback is not supported"
         }
     }
 }
@@ -103,6 +106,10 @@ pub trait HashIOParse: HashIOType + Typeable {
     fn store_childs<H>(&self, _: &H) -> Result<()>
         where H: HashIO {
         Ok(())
+    }
+    fn fallback_parse<H, R>(_: &H, _: &mut R) -> Result<Rc<Self>>
+            where H: HashIO, R: Read {
+        Err(HashIOError::FallbackNotSupported)
     }
 
     fn unsafe_loader() -> bool {
