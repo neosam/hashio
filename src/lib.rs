@@ -8,6 +8,8 @@ pub mod io;
 #[macro_use]
 pub mod hashio;
 
+pub mod hashiofile;
+
 pub mod string;
 pub mod vec;
 
