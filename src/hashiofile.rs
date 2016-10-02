@@ -51,7 +51,8 @@ impl HashIO for HashIOFile {
         if !T::unsafe_loader() {
             let version = try!(read_u32(&mut read));
             if !T::version_valid(version) {
-                return Err(HashIOError::VersionError(version))
+                // try fallback
+                return T::fallback_parse(self, &mut read)
             }
             type_hash = Some(try!(read_hash(&mut read)));
             if !T::type_hash_valid(&type_hash.unwrap()) {
@@ -96,5 +97,73 @@ impl HashIO for HashIOFile {
             try!(rename(tmp_filename, filename));
         }
         Ok(())
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::super::io::*;
+    use super::super::hashio::*;
+    use std::io::{Read, Write};
+    use std::{io, error, fmt};
+    use hash::*;
+    use std::collections::BTreeMap;
+    use std::result;
+    use std::rc::Rc;
+    use hashiofile::*;
+
+    hashio_type! {
+        TestTypeOld {
+        } {
+            b: String
+        }
+    }
+    hashio_type! {
+        TestType {
+            [a: u32, read_u32, write_u32]
+        } {
+            b: String
+        }
+        fallback => TestTypeOld
+    }
+    impl From<Rc<TestTypeOld>> for TestType {
+        fn from(old: Rc<TestTypeOld>) -> TestType {
+            TestType {
+                a: 0,
+                b: old.b.clone()
+            }
+        }
+    }
+
+    #[test]
+    fn testIO() {
+        let hash1;
+        let hash2;
+        {
+            let mut hash_io = HashIOFile::new("unittest/hashiofile".to_string());
+            let t1 = TestType {
+                a: 42,
+                b: Rc::new("Hello World".to_string())
+            };
+            let t2 = TestTypeOld {
+                b: Rc::new("Foo".to_string())
+            };
+            hash1 = t1.as_hash();
+            hash2 = t2.as_hash();
+            hash_io.put(Rc::new(t1)).unwrap();
+            hash_io.put(Rc::new(t2)).unwrap();
+        }
+        {
+            let mut hash_io = HashIOFile::new("unittest/hashiofile".to_string());
+            let t1: Rc<TestType> = hash_io.get(&hash1).unwrap();
+            assert_eq!(42, t1.a);
+            assert_eq!(Rc::new("Hello World".to_string()), t1.b);
+            let t2: Rc<TestType> = hash_io.get(&hash2).unwrap();
+            assert_eq!(0, t2.a);
+            assert_eq!(Rc::new("Foo".to_string()), t2.b);
+            let t2: Rc<TestTypeOld> = hash_io.get(&hash2).unwrap();
+            assert_eq!(Rc::new("Foo".to_string()), t2.b);            
+        }
     }
 }

@@ -12,6 +12,8 @@ macro_rules! hashio_type {
             ),*
         }
         $(fallback => $fallback_type:ident)*
+        $(plain_fallback => $plain_fallback_fn:ident)*
+
         ) => {
 
 
@@ -140,8 +142,23 @@ macro_rules! hashio_type {
                 )*
                 Ok(())
             }
+
+            $(fn fallback_parse<H, R>(hash_io: &H, read: &mut R) -> Result<Rc<Self>>
+                    where H: HashIO, R: Read {
+                $plain_fallback_fn(hash_io, read)
+            })*
+
+            fn type_hash_valid(hash: &Hash) -> bool {
+                if *hash == $model_name::type_hash() {
+                    true
+                } $(else if *hash == $fallback_type::type_hash() {
+                    true
+                })* else {
+                    false
+                }
+            }            
         }
-    };
+    }
 }
 
 #[cfg(test)]
@@ -169,6 +186,7 @@ mod test {
             a: String
         }
         fallback => TestTypeOld
+        plain_fallback => plain_fallback
     }
 
     impl From<Rc<TestTypeOld>> for TestType {
@@ -178,6 +196,14 @@ mod test {
                 a: old.a.clone()
             }
         }
+    }
+    fn plain_fallback<H, R>(hash_io: &H, read: &mut R) -> Result<Rc<TestType>>
+            where H: HashIO, R: Read {
+        let x = try!(read_u32(read));
+        Ok(Rc::new(TestType {
+            x: x,
+            a: Rc::new("".to_string())
+        }))
     }
 
 
