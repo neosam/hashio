@@ -129,7 +129,7 @@ pub trait HashIOParse: HashIOType + Typeable {
 pub trait HashIO {
     fn get<T>(&self, hash: &Hash) -> Result<Rc<T>>
                 where T: HashIOParse;
-    fn put<T>(&self, item: &T) -> Result<()>
+    fn put<T>(&self, item: Rc<T>) -> Result<()>
                 where T: HashIOParse;
 }
 

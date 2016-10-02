@@ -6,6 +6,7 @@ pub mod hash;
 #[macro_use]
 pub mod io;
 #[macro_use]
+pub mod hashio_model;
 pub mod hashio;
 
 pub mod hashiofile;

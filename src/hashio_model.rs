@@ -1,21 +1,18 @@
 
 
 macro_rules! hashio_type {
-    (
-        $model_name:ident {
-            $($attr_name:ident : $attr_type:ty, $attr_read_fn, $attr_write_fn),*
+    
+        ($model_name:ident {
+            $([$attr_name:ident : $attr_type:ty, $attr_read_fn:ident, $attr_write_fn:ident]),*
         } {
-            $( $hash_name : $hash_type
+            $( $hash_name:ident : $hash_type:ident
                 $(
-                    <$($anno_type),+>
+                    <$($anno_type:ident),+>
                  )*
             ),*
         }
-        fallback => {$(
-            $fallback_type, $fallback_block
-        )}
-
-    ) => {
+        $(fallback => $fallback_type:ident)*
+        ) => {
 
 
         // Model definition itself
@@ -24,7 +21,7 @@ macro_rules! hashio_type {
         // specified and the hashio attributes will be
         // Rc pointers.
         #[derive(Debug, Clone, PartialEq)]
-        struct $model_name {
+        pub struct $model_name {
             $(pub $attr_name: $attr_type,)*
             $(pub $hash_name: Rc<$hash_type $(<$($anno_type),+>)*),*>
         }
@@ -36,9 +33,9 @@ macro_rules! hashio_type {
         // Use the exp_fn for the non hashio attributes.  Only the 
         // hash of the HashIO attributes will be stored
         impl Writable for $model_name {
-            fn write_to<W: Write>(&self, write: &mut W) -> Result<usize, io::Error> {
+            fn write_to<W: Write>(&self, write: &mut W) -> result::Result<usize, io::Error> {
                 let mut size = 0;
-                size += $( try!($exp_fn(self.$attr_name, write)); )*
+                size += $( try!($attr_write_fn(self.$attr_name, write)); )*
                 $(
                     try!(write_hash(&self.$hash_name.as_hash(), write));
                     size += 32;
@@ -71,7 +68,7 @@ macro_rules! hashio_type {
             }
 
             fn type_name() -> String {
-                stringify($model_name).to_string();
+                stringify!($model_name).to_string()
             }
         }
 
@@ -79,44 +76,119 @@ macro_rules! hashio_type {
 
         impl HashIOType for $model_name {
             fn childs(&self) -> BTreeMap<String, Rc<HashIOType>> {
-                let mut res = BtreeMap::<String, Rc<HashIOType>>::new();
+                let mut res = BTreeMap::<String, Rc<HashIOType>>::new();
                 $(
                     {
-                        let item = self.$hash_name as Rc<HashIOType>;
-                        res.insert(stringify!($hash_name).as_string(), item);
+                        let item = self.$hash_name.clone() as Rc<HashIOType>;
+                        res.insert(stringify!($hash_name).to_string(), item);
                     }
                 )*
                 res
             }
 
-            fn type_hash_obj(&self) {
-                $model_name.type_hash()
+            fn type_hash_obj(&self) -> Hash {
+                $model_name::type_hash()
             }
 
-            fn type_name_obj(&self) {
-                $model_name.type_name()
+            fn type_name_obj(&self) -> String {
+                $model_name::type_name()
             }
         }
 
 
-        
+
         impl HashIOParse for $model_name {
             fn parse<H, R>(hash_io: &H, read: &mut R, type_hash: &Option<Hash>) -> Result<Rc<Self>>
                     where H: HashIO, R: Read {
-                if type_hash == None {
-                    Err(HashIOError::Undefined("None type received"))
+                if *type_hash == None {
+                    Err(HashIOError::Undefined("None type received".to_string()))
                 } else {
                     let unwrappled_type_hash = type_hash.unwrap();
                     if unwrappled_type_hash == $model_name::type_hash() {
-
+                        $(
+                            let $attr_name: $attr_type = try!($attr_read_fn(read));
+                        )*
+                        $(
+                            let $hash_name: Rc<$hash_type> = {
+                                let hash = try!(read_hash(read));
+                                try!(hash_io.get(&hash))
+                            };
+                        )*
+                        Ok(Rc::new($model_name {
+                            $($attr_name: $attr_name,)*
+                            $($hash_name: $hash_name),*
+                        }))
                     } $( else if unwrappled_type_hash == $fallback_type::type_hash() {
-                        fallback_block();
-                    }) else {
-                        Err(HashIOError::TypeError(type_hash))
+                        let fallback_obj = try!($fallback_type::parse(hash_io, read, type_hash));
+                        Ok(Rc::new($model_name::from(fallback_obj)))
+                    })* else {
+                        Err(HashIOError::TypeError(*type_hash.as_ref().unwrap()))
                     }
                 }
             }
+
+            fn store<H, W>(&self, _: &H, write: &mut W) -> Result<()> 
+                    where H: HashIO, W: Write {
+                try!(self.write_to(write));
+                Ok(())
+            }
+
+            fn store_childs<H>(&self, hash_io: &H) -> Result<()> 
+                    where H: HashIO {
+                $(
+                    try!(hash_io.put(self.$hash_name.clone()));
+                )*
+                Ok(())
+            }
         }
-    }
+    };
 }
 
+#[cfg(test)]
+mod test {
+    use super::super::io::*;
+    use super::super::hashio::*;
+    use std::io::{Read, Write};
+    use std::{io, error, fmt};
+    use hash::*;
+    use std::collections::BTreeMap;
+    use std::result;
+    use std::rc::Rc;
+
+
+    hashio_type! {
+        TestTypeOld {
+        } {
+            a: String
+        }
+    }
+    hashio_type! {
+        TestType {
+            [x: u32, read_u32, write_u32]
+        } {
+            a: String
+        }
+        fallback => TestTypeOld
+    }
+
+    impl From<Rc<TestTypeOld>> for TestType {
+        fn from(old: Rc<TestTypeOld>) -> TestType {
+            TestType {
+                x: 0,
+                a: old.a.clone()
+            }
+        }
+    }
+
+
+    #[test]
+    fn test() {
+        let test_obj = Rc::new(TestType {
+            x: 1,
+            a: Rc::new("abc".to_string())
+        });
+        assert_eq!(TestType::type_hash().as_string(), test_obj.type_hash_obj().as_string());
+        assert_eq!("TestType".to_string(), TestType::type_name());
+        assert_eq!("TestType".to_string(), test_obj.type_name_obj());
+    }
+}

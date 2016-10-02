@@ -7,7 +7,6 @@ use std::io;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::vec::Vec;
-use std::ops::Deref;
 
 impl<T> Writable for Vec<Rc<T>> where T: HashIOParse {
     fn write_to<W: Write>(&self, write: &mut W) -> result::Result<usize, io::Error> {
@@ -78,7 +77,7 @@ impl<T> HashIOParse for Vec<Rc<T>> where T: HashIOParse + 'static {
         try!(write_u32(0, write));
         try!(write_u32(self.len() as u32, write));
         for item in self {
-            try!(hash_io.put(item.deref()));
+            try!(hash_io.put(item.clone()));
         }
         Ok(())
     }
