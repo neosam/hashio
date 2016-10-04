@@ -8,6 +8,7 @@ use std::fs::{File, create_dir_all};
 use std::path::Path;
 use std::fs::rename;
 use std::rc::Rc;
+use log::{LogLevelFilter, max_log_level};
 
 
 /// Structure to store and lead HashIO-able values
@@ -45,6 +46,10 @@ impl HashIOFile {
 impl HashIO for HashIOFile {
     fn get<T>(&self, hash: &Hash) -> Result<Rc<T>>
                 where T: HashIOParse {
+        if max_log_level() == LogLevelFilter::Trace {
+            trace!("HashIO::get<{}> type_hash: {} for {}",
+                T::type_name(), T::type_hash().as_string(), hash.as_string());
+        }
         let filename = self.filename_for_hash(hash);
         let mut read = try!(File::open(filename.clone()));
         let mut type_hash: Option<Hash> = None;
@@ -60,12 +65,16 @@ impl HashIO for HashIOFile {
             }
         }
         let res = try!(T::parse(self, &mut read, &type_hash));
+        trace!("HashIO::get<{}> completed for {}", T::type_name(), hash.as_string());
         Ok(res)
     }
 
     fn put<T>(&self, item: Rc<T>) -> Result<()>
                 where T: HashIOParse {
-
+        if max_log_level() == LogLevelFilter::Trace {
+            trace!("HashIO::put<{}> type_hash: {}",
+                T::type_name(), T::type_hash().as_string());
+        }
         let hash = item.as_hash();
         let filename = self.filename_for_hash(&hash);
 
@@ -101,7 +110,7 @@ impl HashIO for HashIOFile {
 }
 
 
-#[cfg(test)]
+/*#[cfg(test)]
 mod test {
     use super::super::io::*;
     use super::super::hashio::*;
@@ -166,4 +175,4 @@ mod test {
             assert_eq!(Rc::new("Foo".to_string()), t2.b);            
         }
     }
-}
+}*/
