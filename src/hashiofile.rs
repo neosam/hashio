@@ -72,8 +72,9 @@ impl HashIO for HashIOFile {
     fn put<T>(&self, item: Rc<T>) -> Result<()>
                 where T: HashIOParse {
         if max_log_level() == LogLevelFilter::Trace {
-            trace!("HashIO::put<{}> type_hash: {}",
-                T::type_name(), T::type_hash().as_string());
+            trace!("HashIO::put<{}> type_hash: {} for {}",
+                T::type_name(), T::type_hash().as_string(),
+                item.as_hash().as_string());
         }
         let hash = item.as_hash();
         let filename = self.filename_for_hash(&hash);

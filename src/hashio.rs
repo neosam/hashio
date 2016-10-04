@@ -23,6 +23,7 @@ use hash::*;
 use std::collections::BTreeMap;
 use std::result;
 use std::rc::Rc;
+use std::fmt::Debug;
 
 /// Default error type for HashIO.
 #[derive(Debug)]
@@ -42,7 +43,7 @@ impl fmt::Display for HashIOError {
             HashIOError::Undefined(ref msg) => write!(f, "Undefined error: {}", msg),
             HashIOError::VersionError(version) => write!(f, "Unsupported version: {}", version),
             HashIOError::TypeError(ref hash) => write!(f, "Unexpected type: {}", hash.as_string()),
-            HashIOError::IOError(ref err) => err.fmt(f),
+            HashIOError::IOError(ref err) => write!(f, "IOError: {}", err),
             HashIOError::ParseError(ref err) => write!(f, "Parse error: {}", err),
             HashIOError::FallbackNotSupported => write!(f, "Fallback is not supported")
         }
@@ -86,7 +87,7 @@ pub trait Typeable {
 /// In order to do analytics on an abstract level, this
 /// trait provides all required information.  It knows its
 /// type name, its type type hash and its hashio children.
-pub trait HashIOType: Hashable {
+pub trait HashIOType: Hashable + Debug {
     fn childs(&self) -> BTreeMap<String, Rc<HashIOType>> {
         BTreeMap::new()
     }

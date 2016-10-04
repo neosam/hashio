@@ -13,6 +13,7 @@ pub mod hashiofile;
 
 pub mod string;
 pub mod vec;
+pub mod btreemap;
 
 pub mod lazyio;
 pub mod logger;
