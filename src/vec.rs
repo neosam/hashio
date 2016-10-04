@@ -92,6 +92,9 @@ impl<T> HashIOParse for Vec<Rc<T>> where T: HashIOParse + 'static {
     fn unsafe_loader() -> bool {
         true
     }
+    fn type_hash_valid(_: &Hash) -> bool {
+        true
+    }
 }
 
 

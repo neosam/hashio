@@ -1,4 +1,4 @@
-
+#[macro_export]
 macro_rules! hashio_gen_struct {
     ($model_name:ident {
             $($attr_name:ident : $attr_type:ty),*
@@ -19,6 +19,8 @@ macro_rules! hashio_gen_struct {
     }
 }
 
+
+#[macro_export]
 macro_rules! hashio_gen_writable {
     ($model_name:ident {
         $($attr_name:ident : $attr_type:ty, $attr_write_fn:ident ),*
@@ -46,6 +48,8 @@ macro_rules! hashio_gen_writable {
     }
 }
 
+
+#[macro_export]
 macro_rules! hashio_gen_typeable {
     ($model_name:ident {
         $($attr_type:ty),*
@@ -84,6 +88,8 @@ macro_rules! hashio_gen_typeable {
     }
 }
 
+
+#[macro_export]
 macro_rules! hashio_gen_hashiotype {
     ($model_name:ident {
         $($hash_name:ident),*
@@ -111,6 +117,8 @@ macro_rules! hashio_gen_hashiotype {
     }
 }
 
+
+#[macro_export]
 macro_rules! hashio_gen_hashioparse {
     ($model_name:ident {
             $($attr_name:ident : $attr_type:ty, $attr_read_fn:ident),*
@@ -183,6 +191,8 @@ macro_rules! hashio_gen_hashioparse {
     }
 }
 
+
+#[macro_export]
 macro_rules! hashio_type {
         ($model_name:ident {
             $($attr_name:ident : $attr_type:ty, $attr_read_fn:ident, $attr_write_fn:ident),*
